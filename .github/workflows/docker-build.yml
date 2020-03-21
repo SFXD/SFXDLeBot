@@ -11,10 +11,12 @@ jobs:
       run: |
         sha=${GITHUB_SHA:0:7}
         lowercase_GH_repo=${GITHUB_REPOSITORY,,}
-        docker build -t docker.pkg.github.com/$lowercase_GH_repo/lowercase_GH_repo:$sha .
+        app=${lowercase_GH_repo#*/}
+        docker build -t docker.pkg.github.com/$lowercase_GH_repo/${app}:${sha} .
     - name: Push the image to GPR
       run: |
         sha=${GITHUB_SHA:0:7}
         lowercase_GH_repo=${GITHUB_REPOSITORY,,}
+        app=${lowercase_GH_repo#*/}
         docker login docker.pkg.github.com -u $GITHUB_ACTOR -p ${{ secrets.GITHUB_TOKEN }}
-        docker push docker.pkg.github.com/$lowercase_GH_repo/lowercase_GH_repo:$sha
+        docker push docker.pkg.github.com/$lowercase_GH_repo/${app}:${sha}
