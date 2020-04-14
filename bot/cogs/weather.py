@@ -17,9 +17,9 @@ class Weather(commands.Cog):
         if len(location) > 0:
             await ctx.trigger_typing()
             if len(location[0]) == 5 and str(location[0]).isdigit():
-                payload = {'zip': location[0], 'appid': os.environ['OWM_TOKEN']}
+                payload = {'zip': location[0], 'appid': self.bot.bot_config.OWM_TOKEN}
             else:
-                payload = {'q': " ".join(location), 'appid': os.environ['OWM_TOKEN']}
+                payload = {'q': " ".join(location), 'appid': self.bot.bot_config.OWM_TOKEN}
 
             headers = {'user-agent': 'sfxdbot'}
             url = 'http://api.openweathermap.org/data/2.5/weather?'
