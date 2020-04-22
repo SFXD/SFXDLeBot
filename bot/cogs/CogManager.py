@@ -1,8 +1,8 @@
-import logging
 import os
 
 import discord
 from discord.ext import commands
+
 
 class CogManager(commands.Cog):
     def __init__(self, bot):
