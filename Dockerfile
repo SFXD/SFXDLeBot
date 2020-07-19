@@ -7,7 +7,7 @@ ENV PIP_NO_CACHE_DIR=false \
     PIPENV_NOSPIN=1
 
 # Change to workdir
-WORKDIR /bot
+WORKDIR /sfxdlebot/bot
 
 # Copy and Grab Dependencies
 COPY poetry.lock pyproject.toml ./
@@ -19,7 +19,9 @@ RUN pip --no-cache-dir install poetry \
     && pip uninstall poetry -y \
     && rm -rf ~/.config/pypoetry
 
-COPY ./bot .
+COPY . /sfxdlebot/
+
+ENV PYTHONPATH="$PYTHONPATH:/sfxdlebot"
 
 ENTRYPOINT ["python"]
 CMD ["-m", "bot"]
