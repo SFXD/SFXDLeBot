@@ -10,7 +10,7 @@ class Bitcoin(commands.Cog):
     @commands.command(name="btc")
     async def btc(self, ctx, *location: str):
         await ctx.trigger_typing()
-        async with self.bot.session.get(https://api.coindesk.com/v1/bpi/currentprice/BTC.json) as r:
+        async with self.bot.session.get("https://api.coindesk.com/v1/bpi/currentprice/BTC.json") as r:
             if r.status == 200:
                 js = await r.json()
                 value = js['bpi']['USD']['rate']
