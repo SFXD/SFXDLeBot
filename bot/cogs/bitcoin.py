@@ -15,7 +15,7 @@ class Bitcoin(commands.Cog):
                 js = await r.json()
                 value = js['bpi']['USD']['rate']
                 
-                em = discord.Embed(title="Bitcoin USD Price"), color=discord.Color.green(), url="https://www.coindesk.com/price/bitcoin")
+                em = discord.Embed(title="Bitcoin USD Price", color=discord.Color.green(), url="https://www.coindesk.com/price/bitcoin")
                 em.add_field(name="USD Price", value=value)
                 await ctx.send(embed=em)
             else:
