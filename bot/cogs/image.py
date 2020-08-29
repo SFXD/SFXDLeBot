@@ -53,7 +53,7 @@ class Image(commands.Cog):
                             "this: `<prefix> comrade (OPTIONAL)<@mention user OR attach an image OR "
                             "image url>`")
     @commands.cooldown(1, 3, commands.BucketType.user)
-    async def comrade(self, ctx, member_url: typing.Union[discord.Member, str] = None):
+    async def comrade(self, ctx, member_url: discord.Member = None):
         """Overlay the Russian flag over an image"""
 
         with ctx.channel.typing():
@@ -62,6 +62,45 @@ class Image(commands.Cog):
             async with self.bot.session.get("https://imgen.herokuapp.com/communism", headers=headers) as resp:
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.gif'))
+
+    @commands.command(brief="You didn't format the command correctly. It's supposed to look like "
+                            "this: `<prefix> changemymind <text>")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def changemymind(self, ctx, *changeMyMind: str):
+        """Change My Mind Memer"""
+
+        with ctx.channel.typing():
+            headers = {'text': changeMyMind}
+            async with self.bot.session.get("https://imgen.herokuapp.com/changemymind", headers=headers) as resp:
+                print(resp)
+                data = io.BytesIO(await resp.read())
+                await ctx.send(file=discord.File(data, 'meme.png'))
+
+    @commands.command(brief="You didn't format the command correctly. It's supposed to look like "
+                            "this: `<prefix> dabme <text>")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def dabme(self, ctx, user: discord.Member = None):
+        """Dab Memer"""
+
+        with ctx.channel.typing():
+            img = await self.get_image(ctx, user)
+            headers = {'avatars': img}
+            async with self.bot.session.get("https://imgen.herokuapp.com/dab", headers=headers) as resp:
+                data = io.BytesIO(await resp.read())
+                await ctx.send(file=discord.File(data, 'meme.png'))
+
+    @commands.command(brief="You didn't format the command correctly. It's supposed to look like "
+                            "this: `<prefix> doorkicknvm <text>")
+    @commands.cooldown(1, 3, commands.BucketType.user)
+    async def doorkicknvm(self, ctx, user: discord.Member = None):
+        """doorkicknvm memer"""
+
+        with ctx.channel.typing():
+            img = await self.get_image(ctx, user)
+            headers = {'avatars': img}
+            async with self.bot.session.get("https://imgen.herokuapp.com/door", headers=headers) as resp:
+                data = io.BytesIO(await resp.read())
+                await ctx.send(file=discord.File(data, 'meme.png'))
 
 
 def setup(client):
