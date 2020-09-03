@@ -9,6 +9,8 @@ class Stonk(commands.Cog):
     async def stonk(self, ctx, *tickers: str):
         try:
             await ctx.trigger_typing()
+            if len(tickers) == 0:
+                await ctx.send("```\nUsage: $stonk <ticker>\nExample: $stonk TSLA```")
             for ticker in tickers:
                 embed = await self.build_embed(ticker)
                 await ctx.send(embed=embed)
