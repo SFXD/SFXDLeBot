@@ -1,5 +1,7 @@
+import drawSvg as draw
 import discord
 from discord.ext import commands
+import io
 
 class Stonk(commands.Cog):
     def __init__(self, bot):
@@ -8,60 +10,195 @@ class Stonk(commands.Cog):
     @commands.command(name="stonk")
     async def stonk(self, ctx, *tickers: str):
         try:
-            await ctx.trigger_typing()
             if len(tickers) == 0:
                 await ctx.send("```\nUsage: $stonk <ticker>\nExample: $stonk TSLA```")
             for ticker in tickers:
-                embed = await self.build_embed(ticker)
-                await ctx.send(embed=embed)
+                quote_result = await self.build_quote(ctx, ticker)
+                if isinstance(quote_result, str):
+                    await ctx.send(content=quote_result)
+                elif quote_result is None:
+                    await ctx.message.add_reaction("👎")
+                else:
+                    chart_file = await self.build_chart_file(ticker)
+                    await ctx.send(embed=quote_result, file=chart_file)
         except Exception as ex:
             self.bot.log.error(ex)
+            await ctx.message.add_reaction("👎")
 
-    async def build_embed(self, ticker):
+    async def build_quote(self, ctx, ticker):
         async with self.bot.session.get("https://query1.finance.yahoo.com/v7/finance/options/{}".format(ticker)) as r:
-            embed = None
+            if r.status != 200:
+                return
+
+            js = await r.json()
+            if len(js["optionChain"]["result"]) == 0:
+                return
+
+            quote_dict = js["optionChain"]["result"][0]["quote"]
+            symbol = quote_dict["symbol"]
+            currency = quote_dict["currency"]
+            longName = quote_dict["longName"]
+            fullExchangeName = quote_dict["fullExchangeName"]
+            regularMarketPrice = quote_dict["regularMarketPrice"]
+            regularMarketChange = round(quote_dict["regularMarketChange"], 2)
+            regularMarketChangePercent = round(quote_dict["regularMarketChangePercent"], 2)
+
+            # format using diff markdown co we get pretty colors
+            if regularMarketChange > 0:
+                regularMarketChange = "+{}".format(regularMarketChange)
+                color = discord.Color.green()
+                regularMarketChangePercent = "+{}".format(regularMarketChangePercent)
+            else:
+                color = discord.Color.red()
+
+            result = discord.Embed(
+                title="{} ({})".format(longName, symbol),
+                color=color,
+                url="https://finance.yahoo.com/quote/{0}?p={0}".format(symbol),
+            )
+            result.add_field(name="Price", value="```diff\n{}```".format(regularMarketPrice), inline=True)
+            result.add_field(name="Change", value="```diff\n{}```".format(regularMarketChange), inline=True)
+            result.add_field(name="Change %", value="```diff\n{}```".format(regularMarketChangePercent), inline=True)
+            result.add_field(name="Exchange", value=fullExchangeName, inline=True)
+            result.add_field(name="Currency", value=currency, inline=True)
+            return result
+        
+    async def build_chart_file(self, ticker):
+        async with self.bot.session.get("https://query1.finance.yahoo.com/v7/finance/chart/{}".format(ticker)) as r:
             if r.status == 200:
                 js = await r.json()
-                if len(js["optionChain"]["result"]) > 0:
-                    embed = self.build_quote_embed(js)
-                else:
-                    embed = self.build_not_found_embed(ticker)
-            elif r.status == 404:
-                embed = self.build_not_found_embed(ticker)
-            else:
-                embed = discord.Embed(title="Error retrieving quote data for {}. Try again later.".format(ticker))
-            
-            return embed
+                if len(js["chart"]["result"][0]["indicators"]["quote"][0]) == 0:
+                    return
+                
+                quotes = js["chart"]["result"][0]["indicators"]["quote"][0]["close"]
+                previousClose = js["chart"]["result"][0]["meta"]["previousClose"]
 
-    def build_not_found_embed(self, ticker):
-        return discord.Embed(title="Error quote not found for {}".format(ticker))
+                # get quote stats
+                num_quotes = len(quotes)
+                max_quote = previousClose
+                min_quote = quotes[0]
+                for quote in quotes:
+                    if quote is not None and quote > max_quote:
+                        max_quote = quote
+                    if quote is not None and quote < min_quote:
+                        min_quote = quote
 
-    def build_quote_embed(self, js):
-        quoteDict = js["optionChain"]["result"][0]["quote"]
-        tickerSymbol = quoteDict["symbol"]
-        tickerCurrency = quoteDict["currency"]
-        longName = quoteDict["longName"]
-        fullExchangeName = quoteDict["fullExchangeName"]
-        regularMarketPrice = quoteDict["regularMarketPrice"]
-        regularMarketChange = round(quoteDict["regularMarketChange"], 2)
-        regularMarketChangePercent = round(quoteDict["regularMarketChangePercent"], 2)
+                # settings for chart dimensions and spacing
+                scale = 4
+                chart_width = num_quotes * scale
+                chart_height = 150 * scale
+                chart_padding_top = 10 * scale
+                chart_padding_bottom = 10 * scale
+                chart_margin_top = 30 * scale
+                chart_margin_right = 70 * scale
+                chart_margin_bottom = 0 * scale
+                chart_margin_left = 0 * scale
 
-        embed = discord.Embed(
-            title="{} ({})".format(longName, tickerSymbol),
-            color=discord.Color.green(),
-            url="https://finance.yahoo.com/quote/{0}?p={0}".format(tickerSymbol),
-        )
-        # format using diff markdown co we get pretty colors
-        if regularMarketChange > 0:
-            regularMarketChange = "+{}".format(regularMarketChange)
-        if regularMarketChangePercent > 0:
-            regularMarketChangePercent = "+{}".format(regularMarketChangePercent)
-        embed.add_field(name="Price", value="```diff\n{}```".format(regularMarketPrice), inline=True)
-        embed.add_field(name="Change", value="```diff\n{}```".format(regularMarketChange), inline=True)
-        embed.add_field(name="Change %", value="```diff\n{}```".format(regularMarketChangePercent), inline=True)
-        embed.add_field(name="Exchange", value=fullExchangeName, inline=True)
-        embed.add_field(name="Currency", value=tickerCurrency, inline=True)
-        return embed
+                # Create a canvas for the chart
+                canvas = draw.Drawing(
+                    chart_width + chart_margin_right + chart_margin_left,
+                    chart_height + chart_padding_top + chart_padding_bottom + chart_margin_top + chart_margin_bottom,
+                    displayInline=False)
+
+                # create a chart using a polygon
+                chart_ratio = (max_quote - min_quote) / chart_height
+                step_x = chart_width / num_quotes
+                start_x = chart_margin_left
+                start_y = chart_margin_bottom
+                offset_y = chart_margin_bottom + chart_padding_bottom
+                end_x = start_x + num_quotes * step_x
+                end_y = start_y
+                previous_close_y = ((previousClose - min_quote) / chart_ratio) + offset_y
+                last_y = ((quotes[num_quotes - 1] - min_quote) / chart_ratio) + offset_y
+
+                # create chart points
+                points = []
+                next_x = start_x - step_x
+                next_y = None
+                for idx in range(num_quotes):
+                    point = quotes[idx]
+                    if point is not None:
+                        next_y = ((point - min_quote) / chart_ratio) + offset_y
+                    next_x += step_x
+                    points.append(next_x)
+                    points.append(next_y)
+                points.append(end_x)
+                points.append(next_y)
+                points.append(end_x)
+                points.append(end_y)
+
+                # chart color
+                chart_fill = "rgba({green_rgb},0.5)".format_map({"green_rgb": "0,135,60"})
+                if (previous_close_y > last_y):
+                    chart_fill = "rgba({red_rgb},0.5)".format_map({"red_rgb": "240,22,47"})
+
+                # draw chart with white background
+                canvas.append(draw.Rectangle(
+                    start_x, chart_margin_bottom,
+                    chart_width, chart_height + chart_padding_top + chart_padding_bottom,
+                    fill="white"))
+                canvas.append(draw.Lines(
+                    chart_margin_left, chart_margin_bottom, *points,
+                    close=True, fill=chart_fill, stroke="black"))
+
+                # settings for creating tags and lines
+                sig_figs = len(str(round(max_quote)))
+                width_char = 14 * scale
+                font_size = 14 * scale
+                width_nubbin = width_char
+                width_rect = (width_char * (sig_figs + 2))
+                height_rect = 22 * scale
+
+                # create horizontal line to demarque the previous close
+                canvas.append(draw.Line(
+                    start_x, previous_close_y,
+                    end_x, previous_close_y,
+                    stroke="black"))
+
+                # create tag for previous close
+                canvas.append(draw.Lines(
+                    end_x, previous_close_y,
+                    end_x + width_nubbin, previous_close_y + height_rect / 2,
+                    end_x + width_nubbin + width_rect, previous_close_y + height_rect / 2,
+                    end_x + width_nubbin + width_rect, previous_close_y - height_rect / 2,
+                    end_x + width_nubbin, previous_close_y - height_rect / 2,
+                    close=True, fill="grey"))
+                canvas.append(draw.Text(
+                    str(round(previousClose, 2)),
+                    font_size,
+                    end_x + width_nubbin, previous_close_y - font_size * 0.3,
+                    fill="white",
+                    font_family="monospace",
+                    font_weight="bold"))
+
+                # create horizontal line to demarque the current close
+                canvas.append(draw.Line(
+                    start_x, last_y,
+                    end_x, last_y,
+                    stroke="black"))
+
+                # create tag for current close
+                canvas.append(draw.Lines(
+                    end_x, last_y,
+                    end_x + width_nubbin, last_y + height_rect / 2,
+                    end_x + width_nubbin + width_rect, last_y + height_rect / 2,
+                    end_x + width_nubbin + width_rect, last_y - height_rect / 2,
+                    end_x + width_nubbin, last_y - height_rect / 2,
+                    close=True, fill=chart_fill))
+                canvas.append(draw.Text(
+                    str(round(quotes[num_quotes - 1], 2)),
+                    font_size,
+                    chart_width + width_nubbin, last_y - font_size * 0.3,
+                    fill="white",
+                    font_family="monospace",
+                    font_weight="bold"))
+
+                # convert svg to png
+                png_bytes = canvas.rasterize().pngData
+                
+                file = discord.File(io.BytesIO(initial_bytes=png_bytes), filename="test.png")
+                return file
+
 
 def setup(client):
     client.add_cog(Stonk(client))
