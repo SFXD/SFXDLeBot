@@ -76,7 +76,7 @@ class Stonk(commands.Cog):
                 # get quote stats
                 num_quotes = len(quotes)
                 max_quote = previousClose
-                min_quote = quotes[0]
+                min_quote = previousClose
                 for quote in quotes:
                     if quote is not None and quote > max_quote:
                         max_quote = quote
@@ -85,7 +85,7 @@ class Stonk(commands.Cog):
 
                 # settings for chart dimensions and spacing
                 scale = 4
-                chart_width = num_quotes * scale
+                chart_width = max(388, num_quotes-1) * scale
                 chart_height = 150 * scale
                 chart_padding_top = 10 * scale
                 chart_padding_bottom = 10 * scale
@@ -102,11 +102,11 @@ class Stonk(commands.Cog):
 
                 # create a chart using a polygon
                 chart_ratio = (max_quote - min_quote) / chart_height
-                step_x = chart_width / num_quotes
+                step_x = scale
                 start_x = chart_margin_left
                 start_y = chart_margin_bottom
                 offset_y = chart_margin_bottom + chart_padding_bottom
-                end_x = start_x + num_quotes * step_x
+                end_x = start_x + (num_quotes-1) * step_x
                 end_y = start_y
                 previous_close_y = ((previousClose - min_quote) / chart_ratio) + offset_y
                 last_y = ((quotes[num_quotes - 1] - min_quote) / chart_ratio) + offset_y
@@ -122,8 +122,6 @@ class Stonk(commands.Cog):
                     next_x += step_x
                     points.append(next_x)
                     points.append(next_y)
-                points.append(end_x)
-                points.append(next_y)
                 points.append(end_x)
                 points.append(end_y)
 
@@ -148,50 +146,23 @@ class Stonk(commands.Cog):
                 width_nubbin = width_char
                 width_rect = (width_char * (sig_figs + 2))
                 height_rect = 22 * scale
-
-                # create horizontal line to demarque the previous close
-                canvas.append(draw.Line(
-                    start_x, previous_close_y,
-                    end_x, previous_close_y,
-                    stroke="black"))
+                chart_boundary_x = start_x + chart_width
 
                 # create tag for previous close
-                canvas.append(draw.Lines(
-                    end_x, previous_close_y,
-                    end_x + width_nubbin, previous_close_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, previous_close_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, previous_close_y - height_rect / 2,
-                    end_x + width_nubbin, previous_close_y - height_rect / 2,
-                    close=True, fill="grey"))
-                canvas.append(draw.Text(
-                    str(round(previousClose, 2)),
-                    font_size,
-                    end_x + width_nubbin, previous_close_y - font_size * 0.3,
-                    fill="white",
-                    font_family="monospace",
-                    font_weight="bold"))
-
-                # create horizontal line to demarque the current close
-                canvas.append(draw.Line(
-                    start_x, last_y,
-                    end_x, last_y,
-                    stroke="black"))
+                prev_close_value = str(round(previousClose, 2))
+                prev_close_tag = self.create_chart_tag(prev_close_value, font_size,
+                                                       start_x, chart_boundary_x, previous_close_y, width_nubbin,
+                                                       width_rect, height_rect, "grey")
+                for el in prev_close_tag:
+                    canvas.append(el)
 
                 # create tag for current close
-                canvas.append(draw.Lines(
-                    end_x, last_y,
-                    end_x + width_nubbin, last_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, last_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, last_y - height_rect / 2,
-                    end_x + width_nubbin, last_y - height_rect / 2,
-                    close=True, fill=chart_fill))
-                canvas.append(draw.Text(
-                    str(round(quotes[num_quotes - 1], 2)),
-                    font_size,
-                    chart_width + width_nubbin, last_y - font_size * 0.3,
-                    fill="white",
-                    font_family="monospace",
-                    font_weight="bold"))
+                curr_close_value = str(round(quotes[num_quotes - 1], 2))
+                curr_close_tag = self.create_chart_tag(curr_close_value, font_size,
+                                                       start_x, chart_boundary_x, last_y, width_nubbin,
+                                                       width_rect, height_rect, chart_fill)
+                for el in curr_close_tag:
+                    canvas.append(el)
 
                 # convert svg to png
                 png_bytes = canvas.rasterize().pngData
@@ -199,6 +170,20 @@ class Stonk(commands.Cog):
                 file = discord.File(io.BytesIO(initial_bytes=png_bytes), filename="test.png")
                 return file
 
+    def create_chart_tag(self, value, font_size, start_x, end_x, start_y, width_nubbin, width_rect, height_rect, fill_color):
+        chart_line = draw.Line(start_x, start_y,
+                               end_x, start_y,
+                               stroke="black")
+        tag_rect = draw.Lines(end_x, start_y,
+                              end_x + width_nubbin, start_y + height_rect / 2,
+                              end_x + width_nubbin + width_rect, start_y + height_rect / 2,
+                              end_x + width_nubbin + width_rect, start_y - height_rect / 2,
+                              end_x + width_nubbin, start_y - height_rect / 2,
+                              close=True, fill=fill_color)
+        tag_text = draw.Text(value, font_size,
+                             end_x + width_nubbin, start_y - font_size * 0.3,
+                             fill="white", font_family="monospace", font_weight="bold")
+        return [chart_line, tag_rect, tag_text]
 
 def setup(client):
     client.add_cog(Stonk(client))
