@@ -13,6 +13,10 @@ WORKDIR /sfxdlebot/bot
 COPY poetry.lock pyproject.toml ./
 ARG PRODUCTION
 
+RUN apt-get update \
+    && apt-get install -y \
+        libcairo2 \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN pip --no-cache-dir install poetry \
     && POETRY_VIRTUALENVS_CREATE=false poetry install --no-root \
