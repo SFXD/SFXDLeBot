@@ -67,9 +67,9 @@ class Chart:
         points.append(end_y)
 
         # chart color
-        chart_fill = "rgba({green_rgb},0.5)".format_map({"green_rgb": "0,135,60"})
+        chart_fill_rgb = "0,135,60"
         if (previous_close_y > last_y):
-            chart_fill = "rgba({red_rgb},0.5)".format_map({"red_rgb": "240,22,47"})
+            chart_fill_rgb = "240,22,47"
 
         # draw chart with white background
         canvas.append(draw.Rectangle(
@@ -78,7 +78,7 @@ class Chart:
             fill="white"))
         canvas.append(draw.Lines(
             self.chart_margin_left, self.chart_margin_bottom, *points,
-            close=True, fill=chart_fill, stroke="black"))
+            close=True, fill="rgba({},0.5)".format(chart_fill_rgb), stroke="black"))
 
         # settings for creating tags and lines
         prev_close_value = round(self.prev_close_quote, 2)
@@ -94,7 +94,7 @@ class Chart:
             canvas.append(el)
 
         # create tag for current close
-        curr_close_elements = self.create_tag_elements(curr_close_value, start_x, chart_boundary_x, last_y, chart_fill)
+        curr_close_elements = self.create_tag_elements(curr_close_value, start_x, chart_boundary_x, last_y, "rgb({})".format(chart_fill_rgb))
         for el in curr_close_elements:
             canvas.append(el)
 
