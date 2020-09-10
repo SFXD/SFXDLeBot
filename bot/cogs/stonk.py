@@ -1,6 +1,6 @@
-import drawSvg as draw
 import discord
 from discord.ext import commands
+from utils.stonkchart import Chart
 import io
 
 class Stonk(commands.Cog):
@@ -73,129 +73,7 @@ class Stonk(commands.Cog):
                 quotes = js["chart"]["result"][0]["indicators"]["quote"][0]["close"]
                 previousClose = js["chart"]["result"][0]["meta"]["previousClose"]
 
-                # get quote stats
-                num_quotes = len(quotes)
-                max_quote = previousClose
-                min_quote = quotes[0]
-                for quote in quotes:
-                    if quote is not None and quote > max_quote:
-                        max_quote = quote
-                    if quote is not None and quote < min_quote:
-                        min_quote = quote
-
-                # settings for chart dimensions and spacing
-                scale = 4
-                chart_width = num_quotes * scale
-                chart_height = 150 * scale
-                chart_padding_top = 10 * scale
-                chart_padding_bottom = 10 * scale
-                chart_margin_top = 30 * scale
-                chart_margin_right = 70 * scale
-                chart_margin_bottom = 0 * scale
-                chart_margin_left = 0 * scale
-
-                # Create a canvas for the chart
-                canvas = draw.Drawing(
-                    chart_width + chart_margin_right + chart_margin_left,
-                    chart_height + chart_padding_top + chart_padding_bottom + chart_margin_top + chart_margin_bottom,
-                    displayInline=False)
-
-                # create a chart using a polygon
-                chart_ratio = (max_quote - min_quote) / chart_height
-                step_x = chart_width / num_quotes
-                start_x = chart_margin_left
-                start_y = chart_margin_bottom
-                offset_y = chart_margin_bottom + chart_padding_bottom
-                end_x = start_x + num_quotes * step_x
-                end_y = start_y
-                previous_close_y = ((previousClose - min_quote) / chart_ratio) + offset_y
-                last_y = ((quotes[num_quotes - 1] - min_quote) / chart_ratio) + offset_y
-
-                # create chart points
-                points = []
-                next_x = start_x - step_x
-                next_y = None
-                for idx in range(num_quotes):
-                    point = quotes[idx]
-                    if point is not None:
-                        next_y = ((point - min_quote) / chart_ratio) + offset_y
-                    next_x += step_x
-                    points.append(next_x)
-                    points.append(next_y)
-                points.append(end_x)
-                points.append(next_y)
-                points.append(end_x)
-                points.append(end_y)
-
-                # chart color
-                chart_fill = "rgba({green_rgb},0.5)".format_map({"green_rgb": "0,135,60"})
-                if (previous_close_y > last_y):
-                    chart_fill = "rgba({red_rgb},0.5)".format_map({"red_rgb": "240,22,47"})
-
-                # draw chart with white background
-                canvas.append(draw.Rectangle(
-                    start_x, chart_margin_bottom,
-                    chart_width, chart_height + chart_padding_top + chart_padding_bottom,
-                    fill="white"))
-                canvas.append(draw.Lines(
-                    chart_margin_left, chart_margin_bottom, *points,
-                    close=True, fill=chart_fill, stroke="black"))
-
-                # settings for creating tags and lines
-                sig_figs = len(str(round(max_quote)))
-                width_char = 14 * scale
-                font_size = 14 * scale
-                width_nubbin = width_char
-                width_rect = (width_char * (sig_figs + 2))
-                height_rect = 22 * scale
-
-                # create horizontal line to demarque the previous close
-                canvas.append(draw.Line(
-                    start_x, previous_close_y,
-                    end_x, previous_close_y,
-                    stroke="black"))
-
-                # create tag for previous close
-                canvas.append(draw.Lines(
-                    end_x, previous_close_y,
-                    end_x + width_nubbin, previous_close_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, previous_close_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, previous_close_y - height_rect / 2,
-                    end_x + width_nubbin, previous_close_y - height_rect / 2,
-                    close=True, fill="grey"))
-                canvas.append(draw.Text(
-                    str(round(previousClose, 2)),
-                    font_size,
-                    end_x + width_nubbin, previous_close_y - font_size * 0.3,
-                    fill="white",
-                    font_family="monospace",
-                    font_weight="bold"))
-
-                # create horizontal line to demarque the current close
-                canvas.append(draw.Line(
-                    start_x, last_y,
-                    end_x, last_y,
-                    stroke="black"))
-
-                # create tag for current close
-                canvas.append(draw.Lines(
-                    end_x, last_y,
-                    end_x + width_nubbin, last_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, last_y + height_rect / 2,
-                    end_x + width_nubbin + width_rect, last_y - height_rect / 2,
-                    end_x + width_nubbin, last_y - height_rect / 2,
-                    close=True, fill=chart_fill))
-                canvas.append(draw.Text(
-                    str(round(quotes[num_quotes - 1], 2)),
-                    font_size,
-                    chart_width + width_nubbin, last_y - font_size * 0.3,
-                    fill="white",
-                    font_family="monospace",
-                    font_weight="bold"))
-
-                # convert svg to png
-                png_bytes = canvas.rasterize().pngData
-                
+                png_bytes = Chart(quotes, previousClose, scale=2).draw_chart()
                 file = discord.File(io.BytesIO(initial_bytes=png_bytes), filename="test.png")
                 return file
 
