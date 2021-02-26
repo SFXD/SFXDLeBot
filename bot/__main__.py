@@ -12,7 +12,8 @@ from bot.config import config as BOT_CONFIG
 class SfxdBot(commands.Bot):
     def __init__(self):
         super().__init__(
-            command_prefix=BOT_CONFIG.PREFIXES
+            command_prefix=BOT_CONFIG.PREFIXES,
+            case_insensitive=True
         )
         self.remove_command('help')
         self.load_extension("utils.errorhandler")
