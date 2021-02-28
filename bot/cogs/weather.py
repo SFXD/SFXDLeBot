@@ -29,7 +29,7 @@ class Weather(commands.Cog):
                     name = weather_response['name'] + ', ' + weather_response['sys']['country']
                     city_id = weather_response['id']
                     em = discord.Embed(title='Weather in {}'.format(name), color=discord.Color.blue(),
-                                       description=js['weather'][0]['description'],
+                                       description=weather_response['weather'][0]['description'],
                                        url='https://openweathermap.org/city/{}'.format(city_id))
                     embed.add_field(name='Weather', value=f"**🌡️ Current Temp:** {weather_response['main']['temp']}\n**🌡️ Feels Like:** {weather_response['main']['feels_like']}\n**🌡️ Daily High:** {weather_response['main']['temp_max']}\n**🌡️ Daily Low:** {weather_response['main']['temp_min']}\n**Humidity:** {weather_response['main']['humidity']}%\n**🌬️ Wind:** {weather_response['wind']['speed']} mph", inline=False)
                     em.set_thumbnail(url='https://openweathermap.org/img/w/{}.png'.format(icon))
