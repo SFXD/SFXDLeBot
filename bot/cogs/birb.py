@@ -46,17 +46,21 @@ class Birb(commands.Cog):
             sendItem = imgurItem
 
         if sendItem['type'] == 'video/mp4':
-            link = sendItem['gifv']
+            try:
+                await ctx.send(sendItem['mp4'])
+            except:
+                await ctx.send("The birb didn't make it, sorry :no_entry:")
+
         else:
             link = sendItem['link']
 
-        embed = discord.Embed(title="Here's a birb 🐦", color=discord.Color.random())
-        embed.set_image(url=link)
-        embed.set_footer(text=link)
-        try:
-            await ctx.send(embed=embed)
-        except:
-            await ctx.send("The birb didn't make it, sorry :no_entry:")
+            embed = discord.Embed(title="Here's a birb 🐦", color=discord.Color.random())
+            embed.set_image(url=link)
+            embed.set_footer(text=link)
+            try:
+                await ctx.send(embed=embed)
+            except:
+                await ctx.send("The birb didn't make it, sorry :no_entry:")
 
     @commands.command(name="abirb")
     async def _abirb(self, ctx):
