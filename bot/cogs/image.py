@@ -42,10 +42,10 @@ class Image(commands.Cog):
     async def murica(self, ctx, member_url: typing.Union[discord.Member, str] = None):
         """Overlay the American flag over an image"""
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             img = await self.get_image(ctx, member_url)
             headers = {'avatars': img}
-            async with self.bot.session.get("https://imgen.herokuapp.com/america", headers=headers) as resp:
+            async with self.bot.web_client.get("https://imgen.herokuapp.com/america", headers=headers) as resp:
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.gif'))
 
@@ -56,10 +56,10 @@ class Image(commands.Cog):
     async def comrade(self, ctx, member_url: discord.Member = None):
         """Overlay the Russian flag over an image"""
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             img = await self.get_image(ctx, member_url)
             headers = {'avatars': img}
-            async with self.bot.session.get("https://imgen.herokuapp.com/communism", headers=headers) as resp:
+            async with self.bot.web_client.get("https://imgen.herokuapp.com/communism", headers=headers) as resp:
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.gif'))
 
@@ -69,9 +69,9 @@ class Image(commands.Cog):
     async def changemymind(self, ctx, *changeMyMind: str):
         """Change My Mind Memer"""
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             headers = {'text': changeMyMind}
-            async with self.bot.session.get("https://imgen.herokuapp.com/changemymind", headers=headers) as resp:
+            async with self.bot.web_client.get("https://imgen.herokuapp.com/changemymind", headers=headers) as resp:
                 print(resp)
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.png'))
@@ -82,10 +82,10 @@ class Image(commands.Cog):
     async def dabme(self, ctx, user: discord.Member = None):
         """Dab Memer"""
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             img = await self.get_image(ctx, user)
             headers = {'avatars': img}
-            async with self.bot.session.get("https://imgen.herokuapp.com/dab", headers=headers) as resp:
+            async with self.bot.web_client.get("https://imgen.herokuapp.com/dab", headers=headers) as resp:
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.png'))
 
@@ -95,13 +95,13 @@ class Image(commands.Cog):
     async def doorkicknvm(self, ctx, user: discord.Member = None):
         """doorkicknvm memer"""
 
-        with ctx.channel.typing():
+        async with ctx.channel.typing():
             img = await self.get_image(ctx, user)
             headers = {'avatars': img}
-            async with self.bot.session.get("https://imgen.herokuapp.com/door", headers=headers) as resp:
+            async with self.bot.web_client.get("https://imgen.herokuapp.com/door", headers=headers) as resp:
                 data = io.BytesIO(await resp.read())
                 await ctx.send(file=discord.File(data, 'meme.png'))
 
 
-def setup(client):
-    client.add_cog(Image(client))
+async def setup(client):
+    await client.add_cog(Image(client))

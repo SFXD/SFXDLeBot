@@ -21,7 +21,7 @@ class Finvizcrypto(commands.Cog):
 
     async def get_crypto(self, ctx, chart):
         await ctx.trigger_typing()
-        async with self.bot.session.get("https://finviz.com/api/crypto_all.ashx?timeframe=m5", headers=headers) as r:
+        async with self.bot.web_client.get("https://finviz.com/api/crypto_all.ashx?timeframe=m5", headers=headers) as r:
             if r.status == 200:
                 jstring = await r.text()
                 js = json.loads(jstring)
@@ -41,7 +41,7 @@ class Finvizcrypto(commands.Cog):
                 await ctx.send("Error Retrieving FinViz {} Price".format(chart))
 
     async def grab_finviz_chart(self, chart):
-        async with self.bot.session.get("https://elite.finviz.com/fx_image.ashx?{}_m5_l.png".format(chart),
+        async with self.bot.web_client.get("https://elite.finviz.com/fx_image.ashx?{}_m5_l.png".format(chart),
                                         headers=headers) as r:
             if r.status == 200:
                 data = io.BytesIO(await r.read())
@@ -49,5 +49,5 @@ class Finvizcrypto(commands.Cog):
                 return file
 
 
-def setup(client):
-    client.add_cog(Finvizcrypto(client))
+async def setup(client):
+    await client.add_cog(Finvizcrypto(client))

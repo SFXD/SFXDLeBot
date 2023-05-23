@@ -9,7 +9,7 @@ class CogManager(commands.Cog):
         self.bot = bot
         self.bot.log.info("CogManager Loaded")
 
-    def _load_extensions(self):
+    async def _load_extensions(self):
         # Loads Extensions
         # Bypasses cogmanager
         for fileName in os.listdir("cogs"):
@@ -17,12 +17,12 @@ class CogManager(commands.Cog):
             if fileName.lower().endswith(".py") and not (fileName.lower() in ["cogmanager.py"]):
                 name = fileName[:-3]
                 try:
-                    self.bot.load_extension(f"cogs.{name}")
+                    await self.bot.load_extension(f"cogs.{name}")
                     self.bot.log.info(f'{name} loaded successfully')
                 except Exception as error:
                     self.bot.log.exception(f'{name} failed to load')
 
-    def _unload_extensions(self):
+    async def _unload_extensions(self):
         # Unloads Extensions
         # Bypasses cogmanager
         for fileName in os.listdir("cogs"):
@@ -38,8 +38,8 @@ class CogManager(commands.Cog):
     @commands.command(name='reloadCogs', aliases=['rc'])
     @commands.is_owner()
     async def reload_cogs(self, ctx):
-        self._unload_extensions()
-        self._load_extensions()
+        await self._unload_extensions()
+        await self._load_extensions()
         await ctx.send('Cogs Reloaded')
 
     @commands.command(name='load', hidden=True)
@@ -49,7 +49,7 @@ class CogManager(commands.Cog):
         Remember to use dot path. e.g: cogs.owner"""
 
         try:
-            self.bot.load_extension(f'cogs.{cog}')
+            await self.bot.load_extension(f'cogs.{cog}')
         except Exception as e:
             await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
         else:
@@ -62,7 +62,7 @@ class CogManager(commands.Cog):
         Remember to use dot path. e.g: cogs.owner"""
 
         try:
-            self.bot.unload_extension(f'cogs.{cog}')
+            await self.bot.unload_extension(f'cogs.{cog}')
         except Exception as e:
             await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
         else:
@@ -73,12 +73,12 @@ class CogManager(commands.Cog):
     async def reload_cog(self, ctx, *, cog: str):
         # Reloads 1 specific cog
         try:
-            self.bot.reload_extension(f'cogs.{cog}')
+            await self.bot.reload_extension(f'cogs.{cog}')
         except Exception as e:
             await ctx.send(f'**`ERROR:`** {type(e).__name__} - {e}')
         else:
             await ctx.send('**`SUCCESS`**')
 
 
-def setup(bot):
-    bot.add_cog(CogManager(bot))
+async def setup(bot):
+    await bot.add_cog(CogManager(bot))

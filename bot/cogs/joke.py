@@ -15,9 +15,9 @@ class Joke(commands.Cog):
             url += 'random'
         self.bot.log.info(url)
         try:
-            await ctx.trigger_typing()
+            await ctx.channel.typing()
             headers = {'user-agent': 'sfxdbot'}
-            async with self.bot.session.get(url, headers=headers) as r:
+            async with self.bot.web_client.get(url, headers=headers) as r:
                 if r.status == 200:
                     jokeJson = await r.json()
                     if isinstance(jokeJson, list):
@@ -31,5 +31,5 @@ class Joke(commands.Cog):
             self.bot.log.error(ex)
             await ctx.send(content='What do you get when the joke server is down?\n' + str(ex))
 
-def setup(client):
-    client.add_cog(Joke(client))
+async def setup(client):
+    await client.add_cog(Joke(client))

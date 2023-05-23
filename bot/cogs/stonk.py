@@ -26,7 +26,7 @@ class Stonk(commands.Cog):
             await ctx.message.add_reaction("👎")
 
     async def build_quote(self, ctx, ticker):
-        async with self.bot.session.get("https://query1.finance.yahoo.com/v7/finance/options/{}".format(ticker)) as r:
+        async with self.bot.web_client.get("https://query1.finance.yahoo.com/v7/finance/options/{}".format(ticker)) as r:
             if r.status != 200:
                 return
 
@@ -64,7 +64,7 @@ class Stonk(commands.Cog):
             return result
         
     async def build_chart_file(self, ticker):
-        async with self.bot.session.get("https://query1.finance.yahoo.com/v7/finance/chart/{}".format(ticker)) as r:
+        async with self.bot.web_client.get("https://query1.finance.yahoo.com/v7/finance/chart/{}".format(ticker)) as r:
             if r.status == 200:
                 js = await r.json()
                 if len(js["chart"]["result"][0]["indicators"]["quote"][0]) == 0:
@@ -78,5 +78,5 @@ class Stonk(commands.Cog):
                 return file
 
 
-def setup(client):
-    client.add_cog(Stonk(client))
+async def setup(client):
+    await client.add_cog(Stonk(client))

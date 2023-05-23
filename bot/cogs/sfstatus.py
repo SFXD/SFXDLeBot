@@ -11,8 +11,8 @@ class Sfstatus(commands.Cog):
     @commands.command(name="sfstatus")
     async def _sfStatusCheck(self, ctx, *instance: str):
         if len(instance) == 1:
-            await ctx.trigger_typing()
-            async with self.bot.session.get(
+            await ctx.channel.typing()
+            async with self.bot.web_client.get(
                     "https://api.status.salesforce.com/v1/instances/{}/status".format(instance[0])) as r:
                 if r.status == 200:
                     js = await r.json()
@@ -34,5 +34,5 @@ class Sfstatus(commands.Cog):
                                              "Error"))
 
 
-def setup(client):
-    client.add_cog(Sfstatus(client))
+async def setup(client):
+    await client.add_cog(Sfstatus(client))

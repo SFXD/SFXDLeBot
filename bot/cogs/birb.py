@@ -4,8 +4,6 @@ import time
 import discord
 from discord.ext import commands
 
-from utils.functions import func
-
 
 class Birb(commands.Cog):
     def __init__(self, bot):
@@ -16,13 +14,13 @@ class Birb(commands.Cog):
     async def _getimgurgallery(self, tag, sort, window, page):
         headers = {'Authorization': 'Client-ID {}'.format(self.bot.bot_config.IMGUR_TOKEN)}
         url = f"https://api.imgur.com/3/gallery/t/{tag}/{sort}/{window}/{page}"
-        async with self.bot.session.get(url, headers=headers) as r:
+        async with self.bot.web_client.get(url, headers=headers) as r:
             if r.status == 200:
                 return await r.json()
 
     @commands.command(name="birb")
     async def _rbirb(self, ctx):
-        await ctx.trigger_typing()
+        await ctx.channel.typing()
         if (self.birbImgurCache is None) or (time.time() - self.birbImgurCacheTime > 43200):
             print('cache is ded')
             items = []
@@ -66,7 +64,7 @@ class Birb(commands.Cog):
     async def _abirb(self, ctx):
         headers = {'User-Agent': 'Mozilla/5.0'}
         url = "http://random.birb.pw/tweet.json"
-        async with self.bot.session.get(url, headers=headers) as r:
+        async with self.bot.web_client.get(url, headers=headers) as r:
             if r.status == 200:
                 j = await r.json()
                 # insert image filename into URL
@@ -77,6 +75,7 @@ class Birb(commands.Cog):
                 await ctx.send(embed=embed)
             except:
                 await ctx.send("The birb didn't make it, sorry :no_entry:")
+
     @commands.command(name="birbclearcache")
     @commands.is_owner()
     async def _rbirbCacheClear(self, ctx):
@@ -87,5 +86,5 @@ class Birb(commands.Cog):
         await ctx.send('**`SUCCESS`**')
 
 
-def setup(client):
-    client.add_cog(Birb(client))
+async def setup(client):
+    await client.add_cog(Birb(client))
