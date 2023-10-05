@@ -9,7 +9,7 @@ python = "^3.8"
 "discord.py" = "^2.2.3"
 pyyaml = "^6.0"
 validators = "^0.20.0"
-cairosvg = "^2.4.2"
+cairosvg = "^2.7.1"
 drawSvg = "^1.6.1"
 
 [tool.poetry.dev-dependencies]
